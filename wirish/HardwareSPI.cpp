@@ -158,6 +158,10 @@ uint8 HardwareSPI::read(void) {
     return buf[0];
 }
 
+bool HardwareSPI::isData() {
+	return spi_is_rx_nonempty(this->spi_d);
+}
+
 void HardwareSPI::read(uint8 *buf, uint32 len) {
     uint32 rxed = 0;
     while (rxed < len) {

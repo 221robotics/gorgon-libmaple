@@ -43,6 +43,10 @@ void on_heartbeat() {
 }
 
 void loop() {
+    if (!spi.isData()) {
+        // reset uC state here
+    }
+
     uint8_t cmd = spi.read();
     
     switch(cmd) {

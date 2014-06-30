@@ -133,6 +133,11 @@ public:
     void read(uint8 *buffer, uint32 length);
 
     /**
+     * @brief Check if there is data waiting in the SPI buffer.
+     */
+    bool isData();
+
+    /**
      * @brief Transmit a byte.
      * @param data Byte to transmit.
      */

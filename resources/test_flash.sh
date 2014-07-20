@@ -1,0 +1,1 @@
+python stm32loader.py -p /dev/tty.usbserial* -evw maple_mini_boot.bin

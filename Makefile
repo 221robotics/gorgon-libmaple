@@ -128,10 +128,10 @@ endif
 #	@echo "Install target:" $(INSTALL_TARGET)
 #	$(UPLOAD_$(INSTALL_TARGET))
 install:
-	python resources/stm32loader.py -p /dev/ttyUSB* -evw build/gorgon.bin
+	python support/stm32loader.py -p /dev/ttyUSB* -evw build/gorgon.bin
 
 installmac:
-	python resources/stm32loader.py -p /dev/tty.usbserial* -evw build/gorgon.bin
+	python support/stm32loader.py -p /dev/tty.usbserial* -evw build/gorgon.bin
 
 # Force a rebuild if the target changed
 PREV_BUILD_TYPE = $(shell cat $(BUILD_PATH)/build-type 2>/dev/null)

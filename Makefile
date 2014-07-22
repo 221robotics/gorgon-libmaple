@@ -29,7 +29,7 @@ BOARD_INCLUDE_DIR := $(MAKEDIR)/board-includes
 
 # Try "make help" for more information on BOARD and MEMORY_TARGET;
 # these default to a Maple Flash build.
-BOARD ?= maple_mini
+BOARD ?= gorgon
 MEMORY_TARGET ?= jtag
 
 # Chooses the bootloader, available: maple and robotis
@@ -76,7 +76,7 @@ LDFLAGS  = $(TARGET_LDFLAGS) $(TOOLCHAIN_LDFLAGS) -mcpu=cortex-m3 -mthumb \
 ##
 
 LIBMAPLE_MODULES += $(SRCROOT)/libmaple
-LIBMAPLE_MODULES += $(SRCROOT)/libmaple/usb   # The USB module is kept separate
+#LIBMAPLE_MODULES += $(SRCROOT)/libmaple/usb   # The USB module is kept separate
 LIBMAPLE_MODULES += $(LIBMAPLE_MODULE_SERIES) # STM32 series submodule in libmaple
 LIBMAPLE_MODULES += $(SRCROOT)/wirish
 
@@ -128,10 +128,10 @@ endif
 #	@echo "Install target:" $(INSTALL_TARGET)
 #	$(UPLOAD_$(INSTALL_TARGET))
 install:
-	python resources/stm32loader.py -p /dev/ttyUSB* -evw build/maple_mini.bin
+	python resources/stm32loader.py -p /dev/ttyUSB* -evw build/gorgon.bin
 
 installmac:
-	python resources/stm32loader.py -p /dev/tty.usbserial* -evw build/maple_mini.bin
+	python resources/stm32loader.py -p /dev/tty.usbserial* -evw build/gorgon.bin
 
 # Force a rebuild if the target changed
 PREV_BUILD_TYPE = $(shell cat $(BUILD_PATH)/build-type 2>/dev/null)

@@ -74,9 +74,9 @@ namespace wirish {
         }
 
         __weak void board_setup_usb(void) {
-#if BOARD_HAVE_SERIALUSB
+/*#if BOARD_HAVE_SERIALUSB
             SerialUSB.begin();
-#endif
+#endif*/
         }
 
         __weak void series_init(void) {

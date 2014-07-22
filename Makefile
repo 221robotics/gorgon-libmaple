@@ -30,7 +30,7 @@ BOARD_INCLUDE_DIR := $(MAKEDIR)/board-includes
 # Try "make help" for more information on BOARD and MEMORY_TARGET;
 # these default to a Maple Flash build.
 BOARD ?= maple_mini
-MEMORY_TARGET ?= flash
+MEMORY_TARGET ?= jtag
 
 # Chooses the bootloader, available: maple and robotis
 BOOTLOADER ?= maple
@@ -81,11 +81,11 @@ LIBMAPLE_MODULES += $(LIBMAPLE_MODULE_SERIES) # STM32 series submodule in libmap
 LIBMAPLE_MODULES += $(SRCROOT)/wirish
 
 # Official libraries:
-LIBMAPLE_MODULES += $(SRCROOT)/libraries/Servo
-LIBMAPLE_MODULES += $(SRCROOT)/libraries/LiquidCrystal
-LIBMAPLE_MODULES += $(SRCROOT)/libraries/Wire
+#LIBMAPLE_MODULES += $(SRCROOT)/libraries/Servo
+#LIBMAPLE_MODULES += $(SRCROOT)/libraries/LiquidCrystal
+#LIBMAPLE_MODULES += $(SRCROOT)/libraries/Wire
 # Experimental libraries:
-LIBMAPLE_MODULES += $(SRCROOT)/libraries/FreeRTOS
+#LIBMAPLE_MODULES += $(SRCROOT)/libraries/FreeRTOS
 
 # User modules:
 ifneq ($(USER_MODULES),)
@@ -123,10 +123,15 @@ UPLOAD_flash := $(SUPPORT_PATH)/scripts/robotis-loader.py $(ROBOTIS_PORT) $(BUIL
 endif
 
 # Conditionally upload to whatever the last build was
-install: INSTALL_TARGET = $(shell cat $(BUILD_PATH)/build-type 2>/dev/null)
-install: $(BUILD_PATH)/$(BOARD).bin
-	@echo "Install target:" $(INSTALL_TARGET)
-	$(UPLOAD_$(INSTALL_TARGET))
+#install: INSTALL_TARGET = $(shell cat $(BUILD_PATH)/build-type 2>/dev/null)
+#install: $(BUILD_PATH)/$(BOARD).bin
+#	@echo "Install target:" $(INSTALL_TARGET)
+#	$(UPLOAD_$(INSTALL_TARGET))
+install:
+	python resources/stm32loader.py -p /dev/ttyUSB* -evw build/maple_mini.bin
+
+installmac:
+	python resources/stm32loader.py -p /dev/tty.usbserial* -evw build/maple_mini.bin
 
 # Force a rebuild if the target changed
 PREV_BUILD_TYPE = $(shell cat $(BUILD_PATH)/build-type 2>/dev/null)

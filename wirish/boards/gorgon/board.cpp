@@ -25,9 +25,9 @@
  *****************************************************************************/
 
 /**
- * @file   wirish/boards/maple_mini/board.cpp
- * @author Marti Bolivar <mbolivar@leaflabs.com>
- * @brief  Maple Mini board file.
+ * @file   wirish/boards/gorgon/board.cpp
+ * @author Eric Barch <ericb@ericbarch.com>
+ * @brief  Gorgon board file.
  */
 
 #include <board/board.h>
@@ -41,11 +41,23 @@
 /* Since we want the Serial Wire/JTAG pins as GPIOs, disable both SW
  * and JTAG debug support, unless configured otherwise. */
 void boardInit(void) {
-#ifndef CONFIG_MAPLE_MINI_NO_DISABLE_DEBUG
     disableDebugPorts();
-#endif
 }
 
+
+// Pin map: this lets the basic I/O functions (digitalWrite(),
+// analogRead(), pwmWrite()) translate from pin numbers to STM32
+// peripherals.
+//
+// PMAP_ROW() lets us specify a row (really a struct stm32_pin_info)
+// in the pin map. Its arguments are:
+//
+// - GPIO device for the pin (GPIOA, etc.)
+// - GPIO bit for the pin (0 through 15)
+// - Timer device, or NULL if none
+// - Timer channel (1 to 4, for PWM), or 0 if none
+// - ADC device, or NULL if none
+// - ADC channel, or ADCx if none
 extern const stm32_pin_info PIN_MAP[BOARD_NR_GPIO_PINS] = {
 
     /* Top header */
@@ -87,19 +99,42 @@ extern const stm32_pin_info PIN_MAP[BOARD_NR_GPIO_PINS] = {
     {GPIOB,   NULL, NULL, 12, 0, ADCx}, /* D31/PB12 */
     {GPIOB, TIMER4, NULL,  8, 3, ADCx}, /* D32/PB8 */
     {GPIOB, TIMER3, ADC1,  1, 4,    9}, /* D33/PB1 */
+
+    /* Gorgon STM32F103R8 Additions */
+
+    {GPIOC,   NULL, ADC1,  0, 0,   10}, /* D34/PC0 */
+    {GPIOC,   NULL, ADC1,  1, 0,   11}, /* D35/PC1 */
+    {GPIOC,   NULL, ADC1,  2, 0,   12}, /* D36/PC2 */
+    {GPIOC,   NULL, ADC1,  3, 0,   13}, /* D37/PC3 */
+    {GPIOC,   NULL, ADC1,  4, 0,   14}, /* D38/PC4 */
+    {GPIOC,   NULL, ADC1,  5, 0,   15}, /* D39/PC5 */
+    {GPIOC,   NULL, NULL,  6, 0, ADCx}, /* D40/PC6 */
+    {GPIOC,   NULL, NULL,  7, 0, ADCx}, /* D41/PC7 */
+    {GPIOC,   NULL, NULL,  8, 0, ADCx}, /* D42/PC8 */
+    {GPIOC,   NULL, NULL,  9, 0, ADCx}, /* D43/PC9 */
+    {GPIOC,   NULL, NULL, 10, 0, ADCx}, /* D44/PC10 */
+    {GPIOC,   NULL, NULL, 11, 0, ADCx}, /* D45/PC11 */
+    {GPIOC,   NULL, NULL, 12, 0, ADCx}, /* D46/PC12 */
+    {GPIOB, TIMER4, NULL,  9, 4, ADCx}, /* D47/PB9 */
 };
 
+// Array of pins you can use for pwmWrite(). Keep it in Flash because
+// it doesn't change, and so we don't waste RAM.
 extern const uint8 boardPWMPins[BOARD_NR_PWM_PINS] __FLASH__ = {
-    3, 4, 5, 8, 9, 10, 11, 15, 16, 25, 26, 27
+    3, 4, 5, 8, 9, 10, 11, 15, 16, 32, 33, 47 // OLD: 25, 26, 27
 };
 
+// Array of pins you can use for analogRead().
 extern const uint8 boardADCPins[BOARD_NR_ADC_PINS] __FLASH__ = {
-    3, 4, 5, 6, 7, 8, 9, 10, 11
+    3, 4, 5, 6, 7, 8, 9, 10, 11, 33, 34, 35, 36, 37, 38, 39
 };
 
-#define USB_DP 23
-#define USB_DM 24
+//#define USB_DP 23
+//#define USB_DM 24
 
+// Array of pins that the board uses for something special. Other than
+// the button and the LED, it's usually best to leave these pins alone
+// unless you know what you're doing.
 extern const uint8 boardUsedPins[BOARD_NR_USED_PINS] __FLASH__ = {
-    BOARD_LED_PIN, BOARD_BUTTON_PIN, USB_DP, USB_DM
+
 };

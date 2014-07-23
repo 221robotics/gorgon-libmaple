@@ -79,7 +79,7 @@
 #define BOARD_NR_PWM_PINS         12
 
 /* Number of pins capable of ADC conversion. */
-#define BOARD_NR_ADC_PINS          16
+#define BOARD_NR_ADC_PINS         16
 
 /* Number of pins already connected to external hardware.  For Maple,
  * these are just BOARD_LED_PIN, BOARD_BUTTON_PIN, and the debug port

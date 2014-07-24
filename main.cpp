@@ -156,7 +156,7 @@ void mapInterrupts() {
 }
 
 void setup() {
-    //setupPinModes();
+    setupPinModes();
     //mapInterrupts();
 
     spi.beginSlave();

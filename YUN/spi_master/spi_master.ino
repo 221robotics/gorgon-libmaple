@@ -18,7 +18,10 @@ void setup (void)
   SPI.begin();
 
   // Slow down the master a bit
-  SPI.setClockDivider(SPI_CLOCK_DIV2);
+  SPI.setClockDivider(SPI_CLOCK_DIV8);
+  
+  // this worked with the maple mini
+  //SPI.setClockDivider(SPI_CLOCK_DIV2);
   
   Serial.begin(9600);
   
@@ -33,10 +36,10 @@ void loop (void)
   byte recv;
   
   if (is_on) {
-    recv = SPI.transfer('0');
+    recv = SPI.transfer(0x00);
     is_on = false;
   } else {
-    recv = SPI.transfer('1');
+    recv = SPI.transfer(0x01);
     is_on = true;
   }
   

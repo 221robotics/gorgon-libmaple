@@ -9,8 +9,8 @@ bool is_on = true;
 void setup (void)
 {
 
-  pinMode(2, OUTPUT);
-  digitalWrite(2, HIGH);  // ensure SS stays high for now
+  pinMode(9, OUTPUT);
+  digitalWrite(9, HIGH);  // ensure SS stays high for now
 
   // Put SCK, MOSI, SS pins into output mode
   // also put SCK, MOSI into LOW state, and SS into HIGH state.
@@ -18,12 +18,12 @@ void setup (void)
   SPI.begin();
 
   // Slow down the master a bit
-  SPI.setClockDivider(SPI_CLOCK_DIV8);
+  SPI.setClockDivider(SPI_CLOCK_DIV16);
   
   // this worked with the maple mini
   //SPI.setClockDivider(SPI_CLOCK_DIV2);
   
-  Serial.begin(9600);
+  //Serial.begin(9600);
   
 }  // end of setup
 
@@ -31,7 +31,7 @@ void setup (void)
 void loop (void)
 {
   // enable Slave Select
-  digitalWrite(2, LOW);
+  digitalWrite(9, LOW);
   
   byte recv;
   
@@ -43,10 +43,10 @@ void loop (void)
     is_on = true;
   }
   
-  Serial.println(recv);
+  //Serial.println(recv);
 
   // disable Slave Select
-  digitalWrite(2, HIGH);
+  digitalWrite(9, HIGH);
 
   delay (1000);  // 1 seconds delay 
 }  // end of loop

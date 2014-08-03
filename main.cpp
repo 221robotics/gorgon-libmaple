@@ -109,6 +109,8 @@ void setupPinModes() {
         digitalWrite(solenoid_pins[i], LOW);
     }
 
+    //digitalWrite(solenoid_pins[0], HIGH);
+
     // pwms (pwm output)
     pwm1.attach(pwm_pins[0]);
     pwm1.write(90);
@@ -166,9 +168,9 @@ void loop() {
     // echo back everything received over spi
     uint8_t cmd = spi.read();
 
-    if (cmd == 0) {
+    if (cmd == 0x00) {
         digitalWrite(BLUE_LED, LOW);
-    } else if (cmd == 1) {
+    } else if (cmd == 0x01) {
         digitalWrite(BLUE_LED, HIGH);
     }
 

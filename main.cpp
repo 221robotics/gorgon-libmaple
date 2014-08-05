@@ -165,6 +165,11 @@ void setup() {
 }
 
 void loop() {
+    if (!spi.isData()) {
+        // reset uC state here
+        spi.beginSlave();
+    }
+
     // echo back everything received over spi
     uint8_t cmd = spi.read();
 

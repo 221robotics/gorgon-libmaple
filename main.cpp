@@ -175,8 +175,12 @@ void loop() {
 
     if (cmd == 0x00) {
         digitalWrite(BLUE_LED, LOW);
+        digitalWrite(RED_LED, LOW);
+        digitalWrite(GREEN_LED, LOW);
     } else if (cmd == 0x01) {
         digitalWrite(BLUE_LED, HIGH);
+        digitalWrite(RED_LED, HIGH);
+        digitalWrite(GREEN_LED, HIGH);
     }
 
     // 'ack'

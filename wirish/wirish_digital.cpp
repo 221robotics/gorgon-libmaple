@@ -38,9 +38,10 @@
 #include <wirish/boards.h>
 
 uint32 digitalRead(uint8 pin) {
-    if (pin >= BOARD_NR_GPIO_PINS) {
+    // let's speed this up for gorgon
+    /*if (pin >= BOARD_NR_GPIO_PINS) {
         return 0;
-    }
+    }*/
 
     return gpio_read_bit(PIN_MAP[pin].gpio_device, PIN_MAP[pin].gpio_bit) ?
         HIGH : LOW;

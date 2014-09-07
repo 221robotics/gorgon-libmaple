@@ -18,10 +18,10 @@ void setup (void)
   SPI.begin();
 
   // Slow down the master a bit
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
+  //SPI.setClockDivider(SPI_CLOCK_DIV16);
   
   // this worked with the maple mini
-  //SPI.setClockDivider(SPI_CLOCK_DIV2);
+  SPI.setClockDivider(SPI_CLOCK_DIV2);
   
   //Serial.begin(9600);
   
@@ -33,17 +33,14 @@ void loop (void)
   // enable Slave Select
   digitalWrite(9, LOW);
   
-  byte recv;
+  // set PWM
+  SPI.transfer(0x04);
   
-  if (is_on) {
-    recv = SPI.transfer(0x00);
-    is_on = false;
-  } else {
-    recv = SPI.transfer(0x01);
-    is_on = true;
-  }
-  
-  //Serial.println(recv);
+  // PWM channel 0
+  SPI.transfer(0);
+
+  // 90 degrees
+  SPI.transfer(127);
 
   // disable Slave Select
   digitalWrite(9, HIGH);

@@ -259,30 +259,32 @@ void set_pwm_val(uint8_t pwm_chan, uint8_t val) {
     if (pwm_chan > 11)
         return;
 
+    uint16 pulseWidth = map(val, 0, 255, 544, 2400);
+
     if (pwm_chan == 0)
-        pwm0.write(val);
+        pwm0.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 1)
-        pwm1.write(val);
+        pwm1.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 2)
-        pwm2.write(val);
+        pwm2.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 3)
-        pwm3.write(val);
+        pwm3.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 4)
-        pwm4.write(val);
+        pwm4.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 5)
-        pwm5.write(val);
+        pwm5.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 6)
-        pwm6.write(val);
+        pwm6.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 7)
-        pwm7.write(val);
+        pwm7.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 8)
-        pwm8.write(val);
+        pwm8.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 9)
-        pwm9.write(val);
+        pwm9.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 10)
-        pwm10.write(val);
+        pwm10.writeMicroseconds(pulseWidth);
     else if (pwm_chan == 11)
-        pwm11.write(val);
+        pwm11.writeMicroseconds(pulseWidth);
 }
 
 void set_solenoid_val(uint8_t sol_chan, uint8_t state) {

@@ -9,24 +9,16 @@ const uint8_t interrupt_pins[16] __FLASH__ = { 19, 18, 20, 44, 22, 21, 24, 23, 4
 const uint8_t solenoid_pins[8] __FLASH__ = { 45, 42, 36, 37, 38, 7, 6, 39 };
 const uint8_t pwm_pins[12] __FLASH__ = { 16, 15, 32, 47, 11, 10, 9, 8, 5, 4, 3, 33 };
 
-volatile int32_t enc0_count = 0;
-volatile int32_t enc1_count = 0;
-volatile int32_t enc2_count = 0;
-volatile int32_t enc3_count = 0;
-volatile int32_t enc4_count = 0;
-volatile int32_t enc5_count = 0;
-volatile int32_t enc6_count = 0;
-volatile int32_t enc7_count = 0;
+// hold encoder counts
+volatile int32_t enc_count[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+// hold encoder history
+unsigned char enc_ab[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
-unsigned char enc0_ab = 0;   // enc0 history
-unsigned char enc1_ab = 0;   // enc1 history
-unsigned char enc2_ab = 0;   // enc2 history
-unsigned char enc3_ab = 0;   // enc3 history
-unsigned char enc4_ab = 0;   // enc4 history
-unsigned char enc5_ab = 0;   // enc5 history
-unsigned char enc6_ab = 0;   // enc6 history
-unsigned char enc7_ab = 0;   // enc7 history
+// lookup table for quad decoding
 const signed short enc_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 }; 
+
+// addressed passed to SPI when we need to write 4 bytes of 0
+int32_t invalid_num = 0;
 
 // leds
 #define RED_LED 12
@@ -38,14 +30,14 @@ const signed short enc_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, 
 #define SDL 1
 
 // servo objects for setting pwm values
-Servo pwm1, pwm2, pwm3, pwm4, pwm5, pwm6, pwm7, pwm8, pwm9, pwm10, pwm11, pwm12;
+Servo pwm0, pwm1, pwm2, pwm3, pwm4, pwm5, pwm6, pwm7, pwm8, pwm9, pwm10, pwm11;
 
 // spi used to talk to arduino
 HardwareSPI spi(2);
 
 
 
-
+// triggered on int0 A or B rising/falling edge
 void int0_trigger() {
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[0]) == HIGH)
@@ -53,11 +45,12 @@ void int0_trigger() {
     if (digitalRead(interrupt_pins[1]) == HIGH)
         state_bits | 0x02;
 
-    enc0_ab = enc0_ab << 2;                     // move the old data left two places
-    enc0_ab |= (state_bits & 0x03);             // OR in the two new bits
-    enc0_count += enc_table[(enc0_ab & 0x0F)];  // get the change from the 16 entry table
+    enc_ab[0] = enc_ab[0] << 2;                     // move the old data left two places
+    enc_ab[0] |= (state_bits & 0x03);               // OR in the two new bits
+    enc_count[0] += enc_table[(enc_ab[0] & 0x0F)];  // get the change from the 16 entry table
 }
 
+// triggered on int1 A or B rising/falling edge
 void int1_trigger() {
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[2]) == HIGH)
@@ -65,11 +58,12 @@ void int1_trigger() {
     if (digitalRead(interrupt_pins[3]) == HIGH)
         state_bits | 0x02;
 
-    enc1_ab = enc1_ab << 2;                     // move the old data left two places
-    enc1_ab |= (state_bits & 0x03);             // OR in the two new bits
-    enc1_count += enc_table[(enc1_ab & 0x0F)];  // get the change from the 16 entry table
+    enc_ab[1] = enc_ab[1] << 2;                     // move the old data left two places
+    enc_ab[1] |= (state_bits & 0x03);               // OR in the two new bits
+    enc_count[1] += enc_table[(enc_ab[1] & 0x0F)];  // get the change from the 16 entry table
 }
 
+// triggered on int2 A or B rising/falling edge
 void int2_trigger() {
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[4]) == HIGH)
@@ -77,11 +71,12 @@ void int2_trigger() {
     if (digitalRead(interrupt_pins[5]) == HIGH)
         state_bits | 0x02;
 
-    enc2_ab = enc2_ab << 2;                     // move the old data left two places
-    enc2_ab |= (state_bits & 0x03);             // OR in the two new bits
-    enc2_count += enc_table[(enc2_ab & 0x0F)];  // get the change from the 16 entry table
+    enc_ab[2] = enc_ab[2] << 2;                     // move the old data left two places
+    enc_ab[2] |= (state_bits & 0x03);               // OR in the two new bits
+    enc_count[2] += enc_table[(enc_ab[2] & 0x0F)];  // get the change from the 16 entry table
 }
 
+// triggered on int3 A or B rising/falling edge
 void int3_trigger() {
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[6]) == HIGH)
@@ -89,11 +84,12 @@ void int3_trigger() {
     if (digitalRead(interrupt_pins[7]) == HIGH)
         state_bits | 0x02;
 
-    enc3_ab = enc3_ab << 2;                     // move the old data left two places
-    enc3_ab |= (state_bits & 0x03);             // OR in the two new bits
-    enc3_count += enc_table[(enc3_ab & 0x0F)];  // get the change from the 16 entry table
+    enc_ab[3] = enc_ab[3] << 2;                     // move the old data left two places
+    enc_ab[3] |= (state_bits & 0x03);               // OR in the two new bits
+    enc_count[3] += enc_table[(enc_ab[3] & 0x0F)];  // get the change from the 16 entry table
 }
 
+// triggered on int4 A or B rising/falling edge
 void int4_trigger() {
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[8]) == HIGH)
@@ -101,11 +97,12 @@ void int4_trigger() {
     if (digitalRead(interrupt_pins[9]) == HIGH)
         state_bits | 0x02;
 
-    enc4_ab = enc4_ab << 2;                     // move the old data left two places
-    enc4_ab |= (state_bits & 0x03);             // OR in the two new bits
-    enc4_count += enc_table[(enc4_ab & 0x0F)];  // get the change from the 16 entry table
+    enc_ab[4] = enc_ab[4] << 2;                     // move the old data left two places
+    enc_ab[4] |= (state_bits & 0x03);               // OR in the two new bits
+    enc_count[4] += enc_table[(enc_ab[4] & 0x0F)];  // get the change from the 16 entry table
 }
 
+// triggered on int5 A or B rising/falling edge
 void int5_trigger() {
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[10]) == HIGH)
@@ -113,11 +110,12 @@ void int5_trigger() {
     if (digitalRead(interrupt_pins[11]) == HIGH)
         state_bits | 0x02;
 
-    enc5_ab = enc5_ab << 2;                     // move the old data left two places
-    enc5_ab |= (state_bits & 0x03);             // OR in the two new bits
-    enc5_count += enc_table[(enc5_ab & 0x0F)];  // get the change from the 16 entry table
+    enc_ab[5] = enc_ab[5] << 2;                     // move the old data left two places
+    enc_ab[5] |= (state_bits & 0x03);               // OR in the two new bits
+    enc_count[5] += enc_table[(enc_ab[5] & 0x0F)];  // get the change from the 16 entry table
 }
 
+// triggered on int6 A or B rising/falling edge
 void int6_trigger() {
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[12]) == HIGH)
@@ -125,11 +123,12 @@ void int6_trigger() {
     if (digitalRead(interrupt_pins[13]) == HIGH)
         state_bits | 0x02;
 
-    enc6_ab = enc6_ab << 2;                     // move the old data left two places
-    enc6_ab |= (state_bits & 0x03);             // OR in the two new bits
-    enc6_count += enc_table[(enc6_ab & 0x0F)];  // get the change from the 16 entry table
+    enc_ab[6] = enc_ab[6] << 2;                     // move the old data left two places
+    enc_ab[6] |= (state_bits & 0x03);               // OR in the two new bits
+    enc_count[6] += enc_table[(enc_ab[6] & 0x0F)];  // get the change from the 16 entry table
 }
 
+// triggered on int7 A or B rising/falling edge
 void int7_trigger() {
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[14]) == HIGH)
@@ -137,12 +136,12 @@ void int7_trigger() {
     if (digitalRead(interrupt_pins[15]) == HIGH)
         state_bits | 0x02;
 
-    enc7_ab = enc7_ab << 2;                     // move the old data left two places
-    enc7_ab |= (state_bits & 0x03);             // OR in the two new bits
-    enc7_count += enc_table[(enc7_ab & 0x0F)];  // get the change from the 16 entry table
+    enc_ab[7] = enc_ab[7] << 2;                     // move the old data left two places
+    enc_ab[7] |= (state_bits & 0x03);               // OR in the two new bits
+    enc_count[7] += enc_table[(enc_ab[7] & 0x0F)];  // get the change from the 16 entry table
 }
 
-void setupPinModes() {
+void setup_pin_modes() {
     // LEDs (output)
     pinMode(RED_LED, OUTPUT);
     pinMode(BLUE_LED, OUTPUT);
@@ -163,33 +162,33 @@ void setupPinModes() {
     }
 
     // pwms (pwm output)
-    pwm1.attach(pwm_pins[0]);
+    pwm0.attach(pwm_pins[0]);
+    pwm0.write(90);
+    pwm1.attach(pwm_pins[1]);
     pwm1.write(90);
-    pwm2.attach(pwm_pins[1]);
+    pwm2.attach(pwm_pins[2]);
     pwm2.write(90);
-    pwm3.attach(pwm_pins[2]);
+    pwm3.attach(pwm_pins[3]);
     pwm3.write(90);
-    pwm4.attach(pwm_pins[3]);
+    pwm4.attach(pwm_pins[4]);
     pwm4.write(90);
-    pwm5.attach(pwm_pins[4]);
+    pwm5.attach(pwm_pins[5]);
     pwm5.write(90);
-    pwm6.attach(pwm_pins[5]);
+    pwm6.attach(pwm_pins[6]);
     pwm6.write(90);
-    pwm7.attach(pwm_pins[6]);
+    pwm7.attach(pwm_pins[7]);
     pwm7.write(90);
-    pwm8.attach(pwm_pins[7]);
+    pwm8.attach(pwm_pins[8]);
     pwm8.write(90);
-    pwm9.attach(pwm_pins[8]);
+    pwm9.attach(pwm_pins[9]);
     pwm9.write(90);
-    pwm10.attach(pwm_pins[9]);
+    pwm10.attach(pwm_pins[10]);
     pwm10.write(90);
-    pwm11.attach(pwm_pins[10]);
+    pwm11.attach(pwm_pins[11]);
     pwm11.write(90);
-    pwm12.attach(pwm_pins[11]);
-    pwm12.write(90);
 }
 
-void mapInterrupts() {
+void map_interrupts() {
     attachInterrupt(interrupt_pins[0], int0_trigger, CHANGE);
     attachInterrupt(interrupt_pins[1], int0_trigger, CHANGE);
     attachInterrupt(interrupt_pins[2], int1_trigger, CHANGE);
@@ -209,14 +208,135 @@ void mapInterrupts() {
 }
 
 void setup() {
-    setupPinModes();
-    mapInterrupts();
+    setup_pin_modes();
+    map_interrupts();
 
-    //spi.beginSlave();
+    spi.beginSlave();
+}
+
+void reset_self() {
+    // PWMs to neutral
+    pwm0.write(90);
+    pwm1.write(90);
+    pwm2.write(90);
+    pwm3.write(90);
+    pwm4.write(90);
+    pwm5.write(90);
+    pwm6.write(90);
+    pwm7.write(90);
+    pwm8.write(90);
+    pwm9.write(90);
+    pwm10.write(90);
+    pwm11.write(90);
+
+    // reset encoder vars
+    for (uint8_t i=0; i<8; i++) {
+        enc_count[i] = 0;
+        enc_ab[i] = 0;
+    }
+
+    // LEDs off
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(BLUE_LED, LOW);
+    digitalWrite(GREEN_LED, LOW);
+
+    // solenoides off
+    for (uint8_t i=0; i<8; i++) {
+        digitalWrite(solenoid_pins[i], LOW);
+    }
+}
+
+void reset_encoder_count(uint8_t encoder_num) {
+    // sanity check
+    if (encoder_num > 7)
+        return;
+    
+    enc_count[encoder_num] = 0;
+}
+
+void set_pwm_val(uint8_t pwm_chan, uint8_t val) {
+    // sanity check
+    if (pwm_chan > 11)
+        return;
+
+    if (pwm_chan == 0)
+        pwm0.write(val);
+    else if (pwm_chan == 1)
+        pwm1.write(val);
+    else if (pwm_chan == 2)
+        pwm2.write(val);
+    else if (pwm_chan == 3)
+        pwm3.write(val);
+    else if (pwm_chan == 4)
+        pwm4.write(val);
+    else if (pwm_chan == 5)
+        pwm5.write(val);
+    else if (pwm_chan == 6)
+        pwm6.write(val);
+    else if (pwm_chan == 7)
+        pwm7.write(val);
+    else if (pwm_chan == 8)
+        pwm8.write(val);
+    else if (pwm_chan == 9)
+        pwm9.write(val);
+    else if (pwm_chan == 10)
+        pwm10.write(val);
+    else if (pwm_chan == 11)
+        pwm11.write(val);
+}
+
+void set_solenoid_val(uint8_t sol_chan, uint8_t state) {
+    // sanity check
+    if (sol_chan > 7)
+        return;
+
+    digitalWrite(solenoid_pins[sol_chan], state);
+}
+
+void set_led_state(uint8_t led_state) {
+    if (led_state == 0x01) {
+        // not connected
+        digitalWrite(RED_LED, LOW);
+        digitalWrite(BLUE_LED, HIGH);
+        digitalWrite(GREEN_LED, LOW);
+    } else if (led_state == 0x02) {
+        // disabled
+        digitalWrite(RED_LED, HIGH);
+        digitalWrite(BLUE_LED, LOW);
+        digitalWrite(GREEN_LED, LOW);
+    } else if (led_state == 0x03) {
+        // enabled
+        digitalWrite(RED_LED, LOW);
+        digitalWrite(BLUE_LED, LOW);
+        digitalWrite(GREEN_LED, HIGH);
+    } else {
+        // error state
+        digitalWrite(RED_LED, HIGH);
+        digitalWrite(BLUE_LED, HIGH);
+        digitalWrite(GREEN_LED, LOW);
+    }
+}
+
+void on_heartbeat() {
+    // TODO
+}
+
+uint8_t* get_ptr_to_encoder_count(uint8_t encoder_num) {
+    // sanity check
+    if (encoder_num < 8) {
+        // return pointer to 32 bit signed val
+        // we're returning a uint8_t pointer because SPI expects it
+        // length of 4 will be set in the callback
+        return (uint8_t*)&enc_count[encoder_num];
+    } else {
+        // invalid encoder, return 0
+        return (uint8_t*)&invalid_num;
+    }
 }
 
 void loop() {
-    /*if (!spi.isData()) {
+    // allows us to re-establish a connection w/ the arduino if anything happens
+    if (!spi.isData()) {
         // reset uC state here
         spi.beginSlave();
     }
@@ -224,23 +344,33 @@ void loop() {
     // echo back everything received over spi
     uint8_t cmd = spi.read();
 
-    if (cmd == 0x00) {
-        digitalWrite(BLUE_LED, LOW);
-        digitalWrite(RED_LED, LOW);
-        digitalWrite(GREEN_LED, LOW);
-    } else if (cmd == 0x01) {
-        digitalWrite(BLUE_LED, HIGH);
-        digitalWrite(RED_LED, HIGH);
-        digitalWrite(GREEN_LED, HIGH);
-    }
-
-    // 'ack'
-    spi.write(0x04);*/
-
-    if ((enc0_count % 2) == 0) {
-        digitalWrite(BLUE_LED, HIGH);
-    } else {
-        digitalWrite(BLUE_LED, LOW);
+    switch(cmd) {
+        case 0x01:  /* RESET COPROCESSOR */
+            reset_self();
+            break;
+        case 0x02:  /* GET ENCODER COUNT */
+            // return int32_t w/ count
+            spi.write(get_ptr_to_encoder_count(spi.read()), (uint32)4);
+            break;
+        case 0x03:  /* RESET ENCODER COUNT */
+            reset_encoder_count(spi.read());
+            break;
+        case 0x04:  /* SET PWM */
+            set_pwm_val(spi.read(), spi.read());
+            break;
+        case 0x05:  /* SET SOLENOID */
+            set_solenoid_val(spi.read(), spi.read() != 0 ? HIGH : LOW);
+            break;
+        case 0x06:  /* SET CONTROLLER STATE */
+            set_led_state(spi.read());
+            break;
+        case 0x07:  /* HEARTBEAT */
+            on_heartbeat();
+            break;
+        default:
+            // something bad has happened
+            reset_self();
+            break;
     }
 }
 

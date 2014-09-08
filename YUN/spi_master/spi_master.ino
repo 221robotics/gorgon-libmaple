@@ -40,7 +40,7 @@ void loop (void)
   SPI.transfer(0);
 
   // 90 degrees
-  SPI.transfer(127);
+  SPI.transfer(0);
 
   // disable Slave Select
   digitalWrite(9, HIGH);

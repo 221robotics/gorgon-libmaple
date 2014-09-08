@@ -337,36 +337,30 @@ uint8_t* get_ptr_to_encoder_count(uint8_t encoder_num) {
 }
 
 void loop() {
-    // allows us to re-establish a connection w/ the arduino if anything happens
-    if (!spi.isData()) {
-        // reset uC state here
-        spi.beginSlave();
-    }
-
     // echo back everything received over spi
     uint8_t cmd = spi.read();
 
     switch(cmd) {
-        case 0x01:  /* RESET COPROCESSOR */
+        case 0x01:  // RESET COPROCESSOR
             reset_self();
             break;
-        case 0x02:  /* GET ENCODER COUNT */
+        case 0x02:  // GET ENCODER COUNT
             // return int32_t w/ count
             spi.write(get_ptr_to_encoder_count(spi.read()), (uint32)4);
             break;
-        case 0x03:  /* RESET ENCODER COUNT */
+        case 0x03:  // RESET ENCODER COUNT
             reset_encoder_count(spi.read());
             break;
-        case 0x04:  /* SET PWM */
+        case 0x04:  // SET PWM
             set_pwm_val(spi.read(), spi.read());
             break;
-        case 0x05:  /* SET SOLENOID */
+        case 0x05:  // SET SOLENOID
             set_solenoid_val(spi.read(), spi.read() != 0 ? HIGH : LOW);
             break;
-        case 0x06:  /* SET CONTROLLER STATE */
+        case 0x06:  // SET CONTROLLER STATE
             set_led_state(spi.read());
             break;
-        case 0x07:  /* HEARTBEAT */
+        case 0x07:  // HEARTBEAT
             on_heartbeat();
             break;
         default:

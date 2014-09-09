@@ -211,6 +211,9 @@ void setup() {
     setup_pin_modes();
     map_interrupts();
 
+    // wait for arduino to boot
+    delay(1000);
+
     spi.beginSlave();
 }
 
@@ -319,8 +322,17 @@ void set_led_state(uint8_t led_state) {
     }
 }
 
-void on_heartbeat() {
-    // TODO
+void set_controller_state() {
+    // pwm
+    for (int i=0; i<12; i++) {
+        set_pwm_val(i, spi.read());
+    }
+    // solenoid
+    for (int i=0; i<8; i++) {
+        set_solenoid_val(i, spi.read());
+    }
+    // leds
+    set_led_state(spi.read());
 }
 
 uint8_t* get_ptr_to_encoder_count(uint8_t encoder_num) {
@@ -337,10 +349,14 @@ uint8_t* get_ptr_to_encoder_count(uint8_t encoder_num) {
 }
 
 void loop() {
-    // echo back everything received over spi
+    // read opcode from SPI
     uint8_t cmd = spi.read();
 
-    switch(cmd) {
+    if (cmd == 0x04) {
+        set_controller_state();
+    }
+
+    /*switch(cmd) {
         case 0x01:  // RESET COPROCESSOR
             reset_self();
             break;
@@ -351,23 +367,14 @@ void loop() {
         case 0x03:  // RESET ENCODER COUNT
             reset_encoder_count(spi.read());
             break;
-        case 0x04:  // SET PWM
-            set_pwm_val(spi.read(), spi.read());
-            break;
-        case 0x05:  // SET SOLENOID
-            set_solenoid_val(spi.read(), spi.read() != 0 ? HIGH : LOW);
-            break;
-        case 0x06:  // SET CONTROLLER STATE
-            set_led_state(spi.read());
-            break;
-        case 0x07:  // HEARTBEAT
-            on_heartbeat();
+        case 0x04:  // SET CONTROLLER STATE
+            set_controller_state();
             break;
         default:
             // something bad has happened
             reset_self();
             break;
-    }
+    }*/
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

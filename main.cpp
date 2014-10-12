@@ -1,4 +1,4 @@
-// gorgon testing
+// gorgon coprocessor main
 
 #include <wirish/wirish.h>
 #include "libraries/Servo/Servo.h"
@@ -18,7 +18,7 @@ unsigned char enc_ab[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 const signed short enc_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 }; 
 
 // addressed passed to SPI when we need to write 4 bytes of 0
-int32_t invalid_num = 0;
+const int32_t invalid_num = 0;
 
 // leds
 #define RED_LED 12
@@ -352,11 +352,7 @@ void loop() {
     // read opcode from SPI
     uint8_t cmd = spi.read();
 
-    if (cmd == 0x04) {
-        set_controller_state();
-    }
-
-    /*switch(cmd) {
+    switch(cmd) {
         case 0x01:  // RESET COPROCESSOR
             reset_self();
             break;
@@ -367,14 +363,14 @@ void loop() {
         case 0x03:  // RESET ENCODER COUNT
             reset_encoder_count(spi.read());
             break;
-        case 0x04:  // SET CONTROLLER STATE
+        case 0x04:  // SET CONTROLLER STATE (pwm/sol/LED)
             set_controller_state();
             break;
         default:
             // something bad has happened
             reset_self();
             break;
-    }*/
+    }
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

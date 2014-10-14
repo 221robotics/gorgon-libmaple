@@ -215,6 +215,8 @@ void setup() {
     delay(1000);
 
     spi.beginSlave();
+
+    pinMode(BOARD_SPI2_NSS_PIN, INPUT);
 }
 
 void reset_self() {
@@ -299,17 +301,17 @@ void set_solenoid_val(uint8_t sol_chan, uint8_t state) {
 }
 
 void set_led_state(uint8_t led_state) {
-    if (led_state == 0x01) {
+    if (led_state == 1) {
         // not connected
         digitalWrite(RED_LED, LOW);
         digitalWrite(BLUE_LED, HIGH);
         digitalWrite(GREEN_LED, LOW);
-    } else if (led_state == 0x02) {
+    } else if (led_state == 2) {
         // disabled
         digitalWrite(RED_LED, HIGH);
         digitalWrite(BLUE_LED, LOW);
         digitalWrite(GREEN_LED, LOW);
-    } else if (led_state == 0x03) {
+    } else if (led_state == 3) {
         // enabled
         digitalWrite(RED_LED, LOW);
         digitalWrite(BLUE_LED, LOW);
@@ -352,21 +354,14 @@ void loop() {
     // read opcode from SPI
     uint8_t cmd = spi.read();
 
-    switch(cmd) {
-        case 0x01:  // SET CONTROLLER STATE (pwm/sol/LED)
-            set_controller_state();
-            break;
-        case 0x02:  // GET ENCODER COUNT
-            // return int32_t w/ count
-            spi.write(get_ptr_to_encoder_count(spi.read()), (uint32)4);
-            break;
-        case 0x03:  // RESET ENCODER COUNT
-            reset_encoder_count(spi.read());
-            break;
-        default:
-            // anything else unexpected should reset uC
-            reset_self();
-            break;
+    if (cmd == 1) {
+        set_controller_state();
+    } else if (cmd == 2) {
+        spi.write(get_ptr_to_encoder_count(spi.read()), (uint32)4);
+    } else if (cmd == 3) {
+        reset_encoder_count(spi.read());
+    } else if (cmd == 4) {
+        reset_self();
     }
 }
 

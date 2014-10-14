@@ -353,8 +353,8 @@ void loop() {
     uint8_t cmd = spi.read();
 
     switch(cmd) {
-        case 0x01:  // RESET COPROCESSOR
-            reset_self();
+        case 0x01:  // SET CONTROLLER STATE (pwm/sol/LED)
+            set_controller_state();
             break;
         case 0x02:  // GET ENCODER COUNT
             // return int32_t w/ count
@@ -363,11 +363,8 @@ void loop() {
         case 0x03:  // RESET ENCODER COUNT
             reset_encoder_count(spi.read());
             break;
-        case 0x04:  // SET CONTROLLER STATE (pwm/sol/LED)
-            set_controller_state();
-            break;
         default:
-            // something bad has happened
+            // anything else unexpected should reset uC
             reset_self();
             break;
     }

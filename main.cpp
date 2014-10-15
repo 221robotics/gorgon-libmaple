@@ -17,9 +17,6 @@ unsigned char enc_ab[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 // lookup table for quad decoding
 const signed short enc_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 }; 
 
-// addressed passed to SPI when we need to write 4 bytes of 0
-const int32_t invalid_num = 0;
-
 // leds
 #define RED_LED 12
 #define BLUE_LED 13
@@ -337,16 +334,22 @@ void set_controller_state() {
     set_led_state(spi.read());
 }
 
-uint8_t* get_ptr_to_encoder_count(uint8_t encoder_num) {
+void transmit_encoder_count(uint8_t encoder_num) {
     // sanity check
     if (encoder_num < 8) {
-        // return pointer to 32 bit signed val
-        // we're returning a uint8_t pointer because SPI expects it
-        // length of 4 will be set in the callback
-        return (uint8_t*)&enc_count[encoder_num];
+        int32_t val = enc_count[encoder_num];
+
+        // feed out 32 bit int as bytes
+        spi.write((byte)((val >> 24) & 0xFF));
+        spi.write((byte)((val >> 16) & 0xFF));
+        spi.write((byte)((val >> 8) & 0xFF));
+        spi.write((byte)(val & 0xFF));
     } else {
         // invalid encoder, return 0
-        return (uint8_t*)&invalid_num;
+        spi.write(0);
+        spi.write(0);
+        spi.write(0);
+        spi.write(0);
     }
 }
 
@@ -357,7 +360,7 @@ void loop() {
     if (cmd == 1) {
         set_controller_state();
     } else if (cmd == 2) {
-        spi.write(get_ptr_to_encoder_count(spi.read()), (uint32)4);
+        transmit_encoder_count(spi.read());
     } else if (cmd == 3) {
         reset_encoder_count(spi.read());
     } else if (cmd == 4) {

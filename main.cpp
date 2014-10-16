@@ -10,9 +10,7 @@ const uint8_t solenoid_pins[8] __FLASH__ = { 45, 42, 36, 37, 38, 7, 6, 39 };
 const uint8_t pwm_pins[12] __FLASH__ = { 16, 15, 32, 47, 11, 10, 9, 8, 5, 4, 3, 33 };
 
 // hold encoder counts
-volatile int32_t enc_count[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-// hold encoder history
-unsigned char enc_ab[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+volatile int32_t enc_count[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // lookup table for quad decoding
 const signed short enc_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 }; 
@@ -36,106 +34,122 @@ HardwareSPI spi(2);
 
 // triggered on int0 A or B rising/falling edge
 void int0_trigger() {
+    static unsigned char enc_ab = 0;
+
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[0]) == HIGH)
         state_bits = 0x01;
     if (digitalRead(interrupt_pins[1]) == HIGH)
-        state_bits | 0x02;
+        state_bits |= 0x02;
 
-    enc_ab[0] = enc_ab[0] << 2;                     // move the old data left two places
-    enc_ab[0] |= (state_bits & 0x03);               // OR in the two new bits
-    enc_count[0] += enc_table[(enc_ab[0] & 0x0F)];  // get the change from the 16 entry table
+    enc_ab = enc_ab << 2;                           // move the old data left two places
+    enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
+    enc_count[0] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
 }
 
 // triggered on int1 A or B rising/falling edge
 void int1_trigger() {
+    static unsigned char enc_ab = 0;
+
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[2]) == HIGH)
         state_bits = 0x01;
     if (digitalRead(interrupt_pins[3]) == HIGH)
-        state_bits | 0x02;
+        state_bits |= 0x02;
 
-    enc_ab[1] = enc_ab[1] << 2;                     // move the old data left two places
-    enc_ab[1] |= (state_bits & 0x03);               // OR in the two new bits
-    enc_count[1] += enc_table[(enc_ab[1] & 0x0F)];  // get the change from the 16 entry table
+    enc_ab = enc_ab << 2;                           // move the old data left two places
+    enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
+    enc_count[1] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
 }
 
 // triggered on int2 A or B rising/falling edge
 void int2_trigger() {
+    static unsigned char enc_ab = 0;
+
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[4]) == HIGH)
         state_bits = 0x01;
     if (digitalRead(interrupt_pins[5]) == HIGH)
-        state_bits | 0x02;
+        state_bits |= 0x02;
 
-    enc_ab[2] = enc_ab[2] << 2;                     // move the old data left two places
-    enc_ab[2] |= (state_bits & 0x03);               // OR in the two new bits
-    enc_count[2] += enc_table[(enc_ab[2] & 0x0F)];  // get the change from the 16 entry table
+    enc_ab = enc_ab << 2;                           // move the old data left two places
+    enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
+    enc_count[2] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
 }
 
 // triggered on int3 A or B rising/falling edge
 void int3_trigger() {
+    static unsigned char enc_ab = 0;
+
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[6]) == HIGH)
         state_bits = 0x01;
     if (digitalRead(interrupt_pins[7]) == HIGH)
-        state_bits | 0x02;
+        state_bits |= 0x02;
 
-    enc_ab[3] = enc_ab[3] << 2;                     // move the old data left two places
-    enc_ab[3] |= (state_bits & 0x03);               // OR in the two new bits
-    enc_count[3] += enc_table[(enc_ab[3] & 0x0F)];  // get the change from the 16 entry table
+    enc_ab = enc_ab << 2;                           // move the old data left two places
+    enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
+    enc_count[3] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
 }
 
 // triggered on int4 A or B rising/falling edge
 void int4_trigger() {
+    static unsigned char enc_ab = 0;
+
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[8]) == HIGH)
         state_bits = 0x01;
     if (digitalRead(interrupt_pins[9]) == HIGH)
-        state_bits | 0x02;
+        state_bits |= 0x02;
 
-    enc_ab[4] = enc_ab[4] << 2;                     // move the old data left two places
-    enc_ab[4] |= (state_bits & 0x03);               // OR in the two new bits
-    enc_count[4] += enc_table[(enc_ab[4] & 0x0F)];  // get the change from the 16 entry table
+    enc_ab = enc_ab << 2;                           // move the old data left two places
+    enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
+    enc_count[4] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
 }
 
 // triggered on int5 A or B rising/falling edge
 void int5_trigger() {
+    static unsigned char enc_ab = 0;
+
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[10]) == HIGH)
         state_bits = 0x01;
     if (digitalRead(interrupt_pins[11]) == HIGH)
-        state_bits | 0x02;
+        state_bits |= 0x02;
 
-    enc_ab[5] = enc_ab[5] << 2;                     // move the old data left two places
-    enc_ab[5] |= (state_bits & 0x03);               // OR in the two new bits
-    enc_count[5] += enc_table[(enc_ab[5] & 0x0F)];  // get the change from the 16 entry table
+    enc_ab = enc_ab << 2;                           // move the old data left two places
+    enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
+    enc_count[5] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
 }
 
 // triggered on int6 A or B rising/falling edge
 void int6_trigger() {
+    static unsigned char enc_ab = 0;
+
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[12]) == HIGH)
         state_bits = 0x01;
     if (digitalRead(interrupt_pins[13]) == HIGH)
-        state_bits | 0x02;
+        state_bits |= 0x02;
 
-    enc_ab[6] = enc_ab[6] << 2;                     // move the old data left two places
-    enc_ab[6] |= (state_bits & 0x03);               // OR in the two new bits
-    enc_count[6] += enc_table[(enc_ab[6] & 0x0F)];  // get the change from the 16 entry table
+    enc_ab = enc_ab << 2;                           // move the old data left two places
+    enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
+    enc_count[6] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
 }
 
 // triggered on int7 A or B rising/falling edge
 void int7_trigger() {
+    static unsigned char enc_ab = 0;
+
     uint8_t state_bits = 0;
     if (digitalRead(interrupt_pins[14]) == HIGH)
         state_bits = 0x01;
     if (digitalRead(interrupt_pins[15]) == HIGH)
-        state_bits | 0x02;
+        state_bits |= 0x02;
 
-    enc_ab[7] = enc_ab[7] << 2;                     // move the old data left two places
-    enc_ab[7] |= (state_bits & 0x03);               // OR in the two new bits
-    enc_count[7] += enc_table[(enc_ab[7] & 0x0F)];  // get the change from the 16 entry table
+    enc_ab = enc_ab << 2;                           // move the old data left two places
+    enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
+    enc_count[7] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
 }
 
 void setup_pin_modes() {
@@ -204,18 +218,6 @@ void map_interrupts() {
     attachInterrupt(interrupt_pins[15], int7_trigger, CHANGE);
 }
 
-void setup() {
-    setup_pin_modes();
-    map_interrupts();
-
-    // wait for arduino to boot
-    delay(1000);
-
-    spi.beginSlave();
-
-    pinMode(BOARD_SPI2_NSS_PIN, INPUT);
-}
-
 void reset_self() {
     // PWMs to neutral
     pwm0.write(90);
@@ -234,7 +236,6 @@ void reset_self() {
     // reset encoder vars
     for (uint8_t i=0; i<8; i++) {
         enc_count[i] = 0;
-        enc_ab[i] = 0;
     }
 
     // LEDs off
@@ -248,6 +249,24 @@ void reset_self() {
     }
 }
 
+
+void setup() {
+    // coprocessor mapping
+    setup_pin_modes();
+    map_interrupts();
+
+    // wait for arduino to boot
+    delay(1000);
+
+    spi.beginSlave();
+    pinMode(BOARD_SPI2_NSS_PIN, INPUT_PULLUP);
+
+    // reset for good measure
+    reset_self();
+}
+
+
+
 void reset_encoder_count(uint8_t encoder_num) {
     // sanity check
     if (encoder_num > 7)
@@ -256,12 +275,13 @@ void reset_encoder_count(uint8_t encoder_num) {
     enc_count[encoder_num] = 0;
 }
 
+
 void set_pwm_val(uint8_t pwm_chan, uint8_t val) {
     // sanity check
     if (pwm_chan > 11)
         return;
 
-    uint16 pulseWidth = map(val, 0, 255, 544, 2400);
+    uint16 pulseWidth = map(val, 0, 254, 544, 2400);
 
     if (pwm_chan == 0)
         pwm0.writeMicroseconds(pulseWidth);
@@ -294,7 +314,7 @@ void set_solenoid_val(uint8_t sol_chan, uint8_t state) {
     if (sol_chan > 7)
         return;
 
-    digitalWrite(solenoid_pins[sol_chan], state);
+    digitalWrite(solenoid_pins[sol_chan], state > 0 ? HIGH : LOW);
 }
 
 void set_led_state(uint8_t led_state) {
@@ -354,6 +374,10 @@ void transmit_encoder_count(uint8_t encoder_num) {
 }
 
 void loop() {
+    // wait for 'activate' command
+    if (spi.read() != 0xFF)
+        return;
+
     // read opcode from SPI
     uint8_t cmd = spi.read();
 

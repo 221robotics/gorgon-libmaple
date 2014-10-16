@@ -340,16 +340,16 @@ void transmit_encoder_count(uint8_t encoder_num) {
         int32_t val = enc_count[encoder_num];
 
         // feed out 32 bit int as bytes
-        spi.write((byte)((val >> 24) & 0xFF));
-        spi.write((byte)((val >> 16) & 0xFF));
-        spi.write((byte)((val >> 8) & 0xFF));
-        spi.write((byte)(val & 0xFF));
+        spi.transfer((byte)((val >> 24) & 0xFF));
+        spi.transfer((byte)((val >> 16) & 0xFF));
+        spi.transfer((byte)((val >> 8) & 0xFF));
+        spi.transfer((byte)(val & 0xFF));
     } else {
         // invalid encoder, return 0
-        spi.write(0);
-        spi.write(0);
-        spi.write(0);
-        spi.write(0);
+        spi.transfer(0);
+        spi.transfer(0);
+        spi.transfer(0);
+        spi.transfer(0);
     }
 }
 
@@ -360,9 +360,9 @@ void loop() {
     if (cmd == 1) {
         set_controller_state();
     } else if (cmd == 2) {
-        transmit_encoder_count(spi.read());
+        transmit_encoder_count(spi.transfer(0xFF));
     } else if (cmd == 3) {
-        reset_encoder_count(spi.read());
+        reset_encoder_count(spi.transfer(0xFF));
     } else if (cmd == 4) {
         reset_self();
     }

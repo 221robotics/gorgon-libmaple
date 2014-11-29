@@ -506,10 +506,10 @@ void loop() {
     if (!spi.isData()) {
         // run through encoder cps calculations
         for (int i=0; i<8; i++) {
-            if (abs(rolling_cps[i]) >= enc_cps_accuracy[i]) {
+            if ((abs(rolling_cps[i]) >= enc_cps_accuracy[i]) || (millis() - last_cps_calc_millis[i]) > 1000) {
                 // time to calculate counts per second
                 unsigned long current_millis = millis();
-                enc_cps[i] = (1000/(current_millis - last_cps_calc_millis[i])) * rolling_cps[i];
+                enc_cps[i] = (long)((1000.0/(float)(current_millis - last_cps_calc_millis[i])) * (float)rolling_cps[i]);
                 last_cps_calc_millis[i] = current_millis;
                 rolling_cps[i] = 0;
             }

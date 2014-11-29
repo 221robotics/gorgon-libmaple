@@ -8,9 +8,16 @@
 const uint8_t interrupt_pins[16] __FLASH__ = { 19, 18, 20, 44, 22, 21, 24, 23, 43, 27, 40, 41, 2, 17, 34, 35 };
 const uint8_t solenoid_pins[8] __FLASH__ = { 45, 42, 36, 37, 38, 7, 6, 39 };
 const uint8_t pwm_pins[12] __FLASH__ = { 16, 15, 32, 47, 11, 10, 9, 8, 5, 4, 3, 33 };
+bool pmw_attached[] = { false, false, false, false, false, false, false, false, false, false, false, false };
 
 // hold encoder counts
 volatile int32_t enc_count[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+// counts per second vars
+uint16_t enc_cps_accuracy[] = { 16, 16, 16, 16, 16, 16, 16, 16 };
+int32_t enc_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+volatile int32_t rolling_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+unsigned long last_cps_calc_millis[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // lookup table for quad decoding
 const signed short enc_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 }; 
@@ -45,6 +52,7 @@ void int0_trigger() {
     enc_ab = enc_ab << 2;                           // move the old data left two places
     enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
     enc_count[0] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
+    rolling_cps[0] += enc_table[(enc_ab & 0x0F)];   // keep track of our cps count
 }
 
 // triggered on int1 A or B rising/falling edge
@@ -60,6 +68,7 @@ void int1_trigger() {
     enc_ab = enc_ab << 2;                           // move the old data left two places
     enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
     enc_count[1] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
+    rolling_cps[1] += enc_table[(enc_ab & 0x0F)];   // keep track of our cps count
 }
 
 // triggered on int2 A or B rising/falling edge
@@ -75,6 +84,7 @@ void int2_trigger() {
     enc_ab = enc_ab << 2;                           // move the old data left two places
     enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
     enc_count[2] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
+    rolling_cps[2] += enc_table[(enc_ab & 0x0F)];   // keep track of our cps count
 }
 
 // triggered on int3 A or B rising/falling edge
@@ -90,6 +100,7 @@ void int3_trigger() {
     enc_ab = enc_ab << 2;                           // move the old data left two places
     enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
     enc_count[3] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
+    rolling_cps[3] += enc_table[(enc_ab & 0x0F)];   // keep track of our cps count
 }
 
 // triggered on int4 A or B rising/falling edge
@@ -105,6 +116,7 @@ void int4_trigger() {
     enc_ab = enc_ab << 2;                           // move the old data left two places
     enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
     enc_count[4] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
+    rolling_cps[4] += enc_table[(enc_ab & 0x0F)];   // keep track of our cps count
 }
 
 // triggered on int5 A or B rising/falling edge
@@ -120,6 +132,7 @@ void int5_trigger() {
     enc_ab = enc_ab << 2;                           // move the old data left two places
     enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
     enc_count[5] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
+    rolling_cps[5] += enc_table[(enc_ab & 0x0F)];   // keep track of our cps count
 }
 
 // triggered on int6 A or B rising/falling edge
@@ -135,6 +148,7 @@ void int6_trigger() {
     enc_ab = enc_ab << 2;                           // move the old data left two places
     enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
     enc_count[6] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
+    rolling_cps[6] += enc_table[(enc_ab & 0x0F)];   // keep track of our cps count
 }
 
 // triggered on int7 A or B rising/falling edge
@@ -150,6 +164,7 @@ void int7_trigger() {
     enc_ab = enc_ab << 2;                           // move the old data left two places
     enc_ab |= (state_bits & 0x03);                  // OR in the two new bits
     enc_count[7] += enc_table[(enc_ab & 0x0F)];     // get the change from the 16 entry table
+    rolling_cps[7] += enc_table[(enc_ab & 0x0F)];   // keep track of our cps count
 }
 
 void setup_pin_modes() {
@@ -171,32 +186,6 @@ void setup_pin_modes() {
         pinMode(solenoid_pins[i], OUTPUT);
         digitalWrite(solenoid_pins[i], LOW);
     }
-
-    // pwms (pwm output)
-    pwm0.attach(pwm_pins[0]);
-    pwm0.write(90);
-    pwm1.attach(pwm_pins[1]);
-    pwm1.write(90);
-    pwm2.attach(pwm_pins[2]);
-    pwm2.write(90);
-    pwm3.attach(pwm_pins[3]);
-    pwm3.write(90);
-    pwm4.attach(pwm_pins[4]);
-    pwm4.write(90);
-    pwm5.attach(pwm_pins[5]);
-    pwm5.write(90);
-    pwm6.attach(pwm_pins[6]);
-    pwm6.write(90);
-    pwm7.attach(pwm_pins[7]);
-    pwm7.write(90);
-    pwm8.attach(pwm_pins[8]);
-    pwm8.write(90);
-    pwm9.attach(pwm_pins[9]);
-    pwm9.write(90);
-    pwm10.attach(pwm_pins[10]);
-    pwm10.write(90);
-    pwm11.attach(pwm_pins[11]);
-    pwm11.write(90);
 }
 
 void map_interrupts() {
@@ -219,23 +208,44 @@ void map_interrupts() {
 }
 
 void reset_self() {
-    // PWMs to neutral
-    pwm0.write(90);
-    pwm1.write(90);
-    pwm2.write(90);
-    pwm3.write(90);
-    pwm4.write(90);
-    pwm5.write(90);
-    pwm6.write(90);
-    pwm7.write(90);
-    pwm8.write(90);
-    pwm9.write(90);
-    pwm10.write(90);
-    pwm11.write(90);
+    // PWMs detached
+    if (pmw_attached[0])
+        pwm0.detach();
+    if (pmw_attached[1])
+        pwm1.detach();
+    if (pmw_attached[2])
+        pwm2.detach();
+    if (pmw_attached[3])
+        pwm3.detach();
+    if (pmw_attached[4])
+        pwm4.detach();
+    if (pmw_attached[5])
+        pwm5.detach();
+    if (pmw_attached[6])
+        pwm6.detach();
+    if (pmw_attached[7])
+        pwm7.detach();
+    if (pmw_attached[8])
+        pwm8.detach();
+    if (pmw_attached[9])
+        pwm9.detach();
+    if (pmw_attached[10])
+        pwm10.detach();
+    if (pmw_attached[11])
+        pwm11.detach();
+
+    for (uint8_t i=0; i<12; i++)
+        pmw_attached[i] = false;
 
     // reset encoder vars
+    unsigned long current_millis = millis();
     for (uint8_t i=0; i<8; i++) {
         enc_count[i] = 0;
+
+        enc_cps_accuracy[i] = 16;
+        enc_cps[i] = 0;
+        rolling_cps[i] = 0;
+        last_cps_calc_millis[i] = current_millis;
     }
 
     // LEDs off
@@ -275,10 +285,110 @@ void reset_encoder_count(uint8_t encoder_num) {
     enc_count[encoder_num] = 0;
 }
 
+void set_encoder_accuracy() {
+    uint8_t encoder_num = spi.read();
+
+    // sanity check
+    if (encoder_num > 7)
+        return;
+
+    uint8_t hibyte = spi.read();
+    uint8_t lobyte = spi.read();
+
+    enc_cps_accuracy[encoder_num] = ((hibyte << 8) & 0xFF) | (lobyte & 0xFF);
+}
+
+void attach_pwm(uint8_t pwm_chan) {
+    // sanity check
+    if (pwm_chan > 11)
+        return;
+    else if (pmw_attached[pwm_chan])
+        return;
+
+    if (pwm_chan == 0) {
+        pwm0.attach(pwm_pins[pwm_chan]);
+        pwm0.write(90);
+    } else if (pwm_chan == 1) {
+        pwm1.attach(pwm_pins[pwm_chan]);
+        pwm1.write(90);
+    } else if (pwm_chan == 2) {
+        pwm2.attach(pwm_pins[pwm_chan]);
+        pwm2.write(90);
+    } else if (pwm_chan == 3) {
+        pwm3.attach(pwm_pins[pwm_chan]);
+        pwm3.write(90);
+    } else if (pwm_chan == 4) {
+        pwm4.attach(pwm_pins[pwm_chan]);
+        pwm4.write(90);
+    } else if (pwm_chan == 5) {
+        pwm5.attach(pwm_pins[pwm_chan]);
+        pwm5.write(90);
+    } else if (pwm_chan == 6) {
+        pwm6.attach(pwm_pins[pwm_chan]);
+        pwm6.write(90);
+    } else if (pwm_chan == 7) {
+        pwm7.attach(pwm_pins[pwm_chan]);
+        pwm7.write(90);
+    } else if (pwm_chan == 8) {
+        pwm8.attach(pwm_pins[pwm_chan]);
+        pwm8.write(90);
+    } else if (pwm_chan == 9) {
+        pwm9.attach(pwm_pins[pwm_chan]);
+        pwm9.write(90);
+    } else if (pwm_chan == 10) {
+        pwm10.attach(pwm_pins[pwm_chan]);
+        pwm10.write(90);
+    } else if (pwm_chan == 11) {
+        pwm11.attach(pwm_pins[pwm_chan]);
+        pwm11.write(90);
+    }
+
+    // update state
+    pmw_attached[pwm_chan] = true;
+}
+
+void detach_pwm(uint8_t pwm_chan) {
+    // sanity check
+    if (pwm_chan > 11)
+        return;
+    else if (!pmw_attached[pwm_chan])
+        return;
+
+    if (pwm_chan == 0) {
+        pwm0.detach();
+    } else if (pwm_chan == 1) {
+        pwm1.detach();
+    } else if (pwm_chan == 2) {
+        pwm2.detach();
+    } else if (pwm_chan == 3) {
+        pwm3.detach();
+    } else if (pwm_chan == 4) {
+        pwm4.detach();
+    } else if (pwm_chan == 5) {
+        pwm5.detach();
+    } else if (pwm_chan == 6) {
+        pwm6.detach();
+    } else if (pwm_chan == 7) {
+        pwm7.detach();
+    } else if (pwm_chan == 8) {
+        pwm8.detach();
+    } else if (pwm_chan == 9) {
+        pwm9.detach();
+    } else if (pwm_chan == 10) {
+        pwm10.detach();
+    } else if (pwm_chan == 11) {
+        pwm11.detach();
+    }
+
+    // update state
+    pmw_attached[pwm_chan] = false;
+}
 
 void set_pwm_val(uint8_t pwm_chan, uint8_t val) {
     // sanity check
     if (pwm_chan > 11)
+        return;
+    else if (!pmw_attached[pwm_chan])
         return;
 
     uint16 pulseWidth = map(val, 0, 254, 544, 2400);
@@ -373,9 +483,43 @@ void transmit_encoder_count(uint8_t encoder_num) {
     }
 }
 
+void transmit_encoder_cps(uint8_t encoder_num) {
+    // sanity check
+    if (encoder_num < 8) {
+        int32_t val = enc_cps[encoder_num];
+
+        // feed out 32 bit int as bytes
+        spi.transfer((byte)((val >> 24) & 0xFF));
+        spi.transfer((byte)((val >> 16) & 0xFF));
+        spi.transfer((byte)((val >> 8) & 0xFF));
+        spi.transfer((byte)(val & 0xFF));
+    } else {
+        // invalid encoder, return 0
+        spi.transfer(0);
+        spi.transfer(0);
+        spi.transfer(0);
+        spi.transfer(0);
+    }
+}
+
 void loop() {
-    // wait for 'activate' command
+    if (!spi.isData()) {
+        // run through encoder cps calculations
+        for (int i=0; i<8; i++) {
+            if (abs(rolling_cps[i]) >= enc_cps_accuracy[i]) {
+                // time to calculate counts per second
+                unsigned long current_millis = millis();
+                enc_cps[i] = ((current_millis - last_cps_calc_millis[i])/10) * rolling_cps[i];
+                last_cps_calc_millis[i] = current_millis;
+                rolling_cps[i] = 0;
+            }
+        }
+    }
+
+    // wait for 'activate' command (0xFF, 0x7F)
     if (spi.read() != 0xFF)
+        return;
+    if (spi.read() != 0x7F)
         return;
 
     // read opcode from SPI
@@ -388,6 +532,18 @@ void loop() {
     } else if (cmd == 3) {
         reset_encoder_count(spi.transfer(0xFF));
     } else if (cmd == 4) {
+        // get encoder CPS
+        transmit_encoder_cps(spi.transfer(0xFF));
+    } else if (cmd == 5) {
+        // config encoder CPS accuracy
+        set_encoder_accuracy();
+    } else if (cmd == 6) {
+        // PWM attach
+        attach_pwm(spi.transfer(0xFF));
+    } else if (cmd == 7) {
+        // PWM detach
+        detach_pwm(spi.transfer(0xFF));
+    } else if (cmd == 8) {
         reset_self();
     }
 }

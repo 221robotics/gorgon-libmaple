@@ -509,7 +509,7 @@ void loop() {
             if (abs(rolling_cps[i]) >= enc_cps_accuracy[i]) {
                 // time to calculate counts per second
                 unsigned long current_millis = millis();
-                enc_cps[i] = ((current_millis - last_cps_calc_millis[i])/10) * rolling_cps[i];
+                enc_cps[i] = (1000/(current_millis - last_cps_calc_millis[i])) * rolling_cps[i];
                 last_cps_calc_millis[i] = current_millis;
                 rolling_cps[i] = 0;
             }

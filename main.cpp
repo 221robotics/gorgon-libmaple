@@ -15,7 +15,7 @@ volatile int32_t enc_count[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // counts per second vars
 uint16_t enc_cps_accuracy[] = { 16, 16, 16, 16, 16, 16, 16, 16 };
-int32_t enc_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+float enc_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 volatile int32_t rolling_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 unsigned long last_cps_calc_millis[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -486,13 +486,17 @@ void transmit_encoder_count(uint8_t encoder_num) {
 void transmit_encoder_cps(uint8_t encoder_num) {
     // sanity check
     if (encoder_num < 8) {
-        int32_t val = enc_cps[encoder_num];
+        union {
+            float f;
+            uint8_t b[4];
+        } u;
+        u.f = enc_cps[encoder_num];
 
         // feed out 32 bit int as bytes
-        spi.transfer((byte)((val >> 24) & 0xFF));
-        spi.transfer((byte)((val >> 16) & 0xFF));
-        spi.transfer((byte)((val >> 8) & 0xFF));
-        spi.transfer((byte)(val & 0xFF));
+        spi.transfer(u.b[0]);
+        spi.transfer(u.b[1]);
+        spi.transfer(u.b[2]);
+        spi.transfer(u.b[3]);
     } else {
         // invalid encoder, return 0
         spi.transfer(0);
@@ -509,7 +513,7 @@ void loop() {
             if ((abs(rolling_cps[i]) >= enc_cps_accuracy[i]) || (millis() - last_cps_calc_millis[i]) > 1000) {
                 // time to calculate counts per second
                 unsigned long current_millis = millis();
-                enc_cps[i] = (long)((1000.0/(float)(current_millis - last_cps_calc_millis[i])) * (float)rolling_cps[i]);
+                enc_cps[i] = ((1000.0/(float)(current_millis - last_cps_calc_millis[i])) * (float)rolling_cps[i]);
                 last_cps_calc_millis[i] = current_millis;
                 rolling_cps[i] = 0;
             }

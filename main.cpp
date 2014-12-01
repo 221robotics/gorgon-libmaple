@@ -390,6 +390,8 @@ void set_pwm_val(uint8_t pwm_chan, uint8_t val) {
         return;
     else if (!pmw_attached[pwm_chan])
         return;
+    else if (val == 255)
+        return;
 
     uint16 pulseWidth = map(val, 0, 254, 544, 2400);
 
@@ -443,11 +445,26 @@ void set_led_state(uint8_t led_state) {
         digitalWrite(RED_LED, LOW);
         digitalWrite(BLUE_LED, LOW);
         digitalWrite(GREEN_LED, HIGH);
-    } else {
+    } else if (led_state == 4) {
         // error state
         digitalWrite(RED_LED, HIGH);
         digitalWrite(BLUE_LED, HIGH);
         digitalWrite(GREEN_LED, LOW);
+    } else if (led_state == 5) {
+        // error state
+        digitalWrite(RED_LED, HIGH);
+        digitalWrite(BLUE_LED, LOW);
+        digitalWrite(GREEN_LED, HIGH);
+    } else if (led_state == 6) {
+        // error state
+        digitalWrite(RED_LED, LOW);
+        digitalWrite(BLUE_LED, HIGH);
+        digitalWrite(GREEN_LED, HIGH);
+    } else {
+        // error state
+        digitalWrite(RED_LED, HIGH);
+        digitalWrite(BLUE_LED, HIGH);
+        digitalWrite(GREEN_LED, HIGH);
     }
 }
 

@@ -19,6 +19,11 @@ float enc_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 volatile int32_t rolling_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 unsigned long last_cps_calc_millis[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
+// state tracking
+unsigned long last_spi_millis = 0;
+unsigned long last_nospi_toggle = 0;
+bool nospi_led_on = false;
+
 // lookup table for quad decoding
 const signed short enc_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 }; 
 
@@ -247,11 +252,6 @@ void reset_self() {
         rolling_cps[i] = 0;
         last_cps_calc_millis[i] = current_millis;
     }
-
-    // LEDs off
-    digitalWrite(RED_LED, LOW);
-    digitalWrite(BLUE_LED, LOW);
-    digitalWrite(GREEN_LED, LOW);
 
     // solenoides off
     for (uint8_t i=0; i<8; i++) {
@@ -523,8 +523,25 @@ void transmit_encoder_cps(uint8_t encoder_num) {
     }
 }
 
+// blink the blue LED (for when we have no SPI data)
+void toggle_nospi() {
+    last_nospi_toggle = millis();
+
+    if (nospi_led_on) {
+        nospi_led_on = false;
+        digitalWrite(RED_LED, LOW);
+        digitalWrite(BLUE_LED, LOW);
+        digitalWrite(GREEN_LED, LOW);
+    } else {
+        nospi_led_on = true;
+        digitalWrite(RED_LED, LOW);
+        digitalWrite(BLUE_LED, HIGH);
+        digitalWrite(GREEN_LED, LOW);
+    }
+}
+
 void loop() {
-    if (!spi.isData()) {
+    while (!spi.isData()) {
         // run through encoder cps calculations
         for (int i=0; i<8; i++) {
             if ((abs(rolling_cps[i]) >= enc_cps_accuracy[i]) || (millis() - last_cps_calc_millis[i]) > 1000) {
@@ -535,6 +552,17 @@ void loop() {
                 rolling_cps[i] = 0;
             }
         }
+
+        // check how long it's been since we've seen valid data (error if > 1sec)
+        if ((millis() - last_spi_millis) > 1000) {
+            // keep everything in a safe state
+            reset_self();
+
+            // blink the blue light if we haven't received SPI data in over 1 second
+            if ((millis() - last_nospi_toggle) > 1000) {
+                toggle_nospi();
+            }
+        }
     }
 
     // wait for 'activate' command (0xFF, 0x7F)
@@ -542,6 +570,9 @@ void loop() {
         return;
     if (spi.read() != 0x7F)
         return;
+
+    // we've got good SPI data
+    last_spi_millis = millis();
 
     // read opcode from SPI
     uint8_t cmd = spi.read();

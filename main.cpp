@@ -544,6 +544,11 @@ void loop() {
     while (!spi.isData()) {
         // run through encoder cps calculations
         for (int i=0; i<8; i++) {
+            // SPI data has top priority, we'll get around to these calculations afterwards
+            if (spi.isData())
+                break;
+
+            // calculate encoder CPS values
             if ((abs(rolling_cps[i]) >= enc_cps_accuracy[i]) || (millis() - last_cps_calc_millis[i]) > 1000) {
                 // time to calculate counts per second
                 unsigned long current_millis = millis();

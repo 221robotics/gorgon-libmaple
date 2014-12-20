@@ -15,6 +15,7 @@ volatile int32_t enc_count[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // counts per second vars
 uint16_t enc_cps_accuracy[] = { 16, 16, 16, 16, 16, 16, 16, 16 };
+float enc_cps_alpha[] = { 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2 };
 float enc_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 volatile int32_t rolling_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 int32_t rolling_cps_last[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -255,6 +256,7 @@ void reset_self() {
         rolling_cps_last[i] = 0;
         last_cps_calc_millis[i] = current_millis;
         last_cps_check_millis[i] = current_millis;
+        enc_cps_alpha[i] = 0.2;
     }
 
     // solenoides off
@@ -307,6 +309,22 @@ void set_encoder_accuracy() {
         return;
 
     enc_cps_accuracy[encoder_num] = new_accuracy;
+}
+
+void set_encoder_alpha() {
+    uint8_t encoder_num = spi.read();
+
+    // sanity check
+    if (encoder_num > 7)
+        return;
+
+    uint8_t new_alpha = spi.read();
+
+    // ignore a value of zero
+    if (new_alpha == 0)
+        return;
+
+    enc_cps_alpha[encoder_num] = 2.0/(float)(new_alpha+1);
 }
 
 void attach_pwm(uint8_t pwm_chan) {
@@ -568,7 +586,9 @@ void loop() {
                 float time_diff_millis = current_millis - last_cps_calc_millis[i];
 
                 // update our CPS rate (1000msec since we want counts per second)
-                enc_cps[i] = (1000/time_diff_millis) * (float)rolling_cps[i];
+                float latest_cps_sample = (1000/time_diff_millis) * (float)rolling_cps[i];
+                // exponential moving average
+                enc_cps[i] = (enc_cps_alpha[i] * latest_cps_sample) + ((1.0 - enc_cps_alpha[i]) * enc_cps[i]);
 
                 // update the last time we calculated CPS for this encoder
                 last_cps_calc_millis[i] = current_millis;
@@ -640,6 +660,9 @@ void loop() {
         // PWM detach
         detach_pwm(spi.transfer(0xFF));
     } else if (cmd == 8) {
+        // config encoder average alpha
+        set_encoder_alpha();
+    } else if (cmd == 100) {
         reset_self();
     }
 

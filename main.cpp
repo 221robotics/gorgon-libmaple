@@ -17,7 +17,9 @@ volatile int32_t enc_count[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 uint16_t enc_cps_accuracy[] = { 16, 16, 16, 16, 16, 16, 16, 16 };
 float enc_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 volatile int32_t rolling_cps[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+int32_t rolling_cps_last[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 unsigned long last_cps_calc_millis[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+unsigned long last_cps_check_millis[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // state tracking
 unsigned long last_spi_millis = 0;
@@ -250,7 +252,9 @@ void reset_self() {
         enc_cps_accuracy[i] = 16;
         enc_cps[i] = 0;
         rolling_cps[i] = 0;
+        rolling_cps_last[i] = 0;
         last_cps_calc_millis[i] = current_millis;
+        last_cps_check_millis[i] = current_millis;
     }
 
     // solenoides off
@@ -295,7 +299,14 @@ void set_encoder_accuracy() {
     uint8_t hibyte = spi.read();
     uint8_t lobyte = spi.read();
 
-    enc_cps_accuracy[encoder_num] = ((hibyte << 8) & 0xFF) | (lobyte & 0xFF);
+    uint16_t new_accuracy = (hibyte << 8) | lobyte;
+    new_accuracy *= 4;
+
+    // ignore a value of zero
+    if (new_accuracy == 0)
+        return;
+
+    enc_cps_accuracy[encoder_num] = new_accuracy;
 }
 
 void attach_pwm(uint8_t pwm_chan) {
@@ -549,12 +560,38 @@ void loop() {
                 break;
 
             // calculate encoder CPS values
-            if ((abs(rolling_cps[i]) >= enc_cps_accuracy[i]) || (millis() - last_cps_calc_millis[i]) > 1000) {
+            if (abs(rolling_cps[i]) >= enc_cps_accuracy[i]) {
                 // time to calculate counts per second
                 unsigned long current_millis = millis();
-                enc_cps[i] = ((1000.0/(float)(current_millis - last_cps_calc_millis[i])) * (float)rolling_cps[i]);
+
+                // how many milliseconds has it been since our last calculation?
+                float time_diff_millis = current_millis - last_cps_calc_millis[i];
+
+                // update our CPS rate (1000msec since we want counts per second)
+                enc_cps[i] = (1000/time_diff_millis) * (float)rolling_cps[i];
+
+                // update the last time we calculated CPS for this encoder
                 last_cps_calc_millis[i] = current_millis;
+
+                // reset rolling pulse counts
                 rolling_cps[i] = 0;
+                rolling_cps_last[i] = 0;
+            // we haven't crossed the encoder's accuracy threshold, check if we should zero out the CPS
+            } else if ((millis() - last_cps_check_millis[i]) > 500) {
+                // store the time we last checked our pulse count
+                last_cps_check_millis[i] = millis();
+
+                // if we've received any pulses, don't zero out our RPM yet (keep waiting)
+                if (rolling_cps[i] != rolling_cps_last[i]) {
+                    rolling_cps_last[i] = rolling_cps[i];
+                    continue;
+                }
+
+                // 500msec without a pulse, consider ourselves zero
+                enc_cps[i] = 0;
+                rolling_cps[i] = 0;
+                rolling_cps_last[i] = 0;
+                last_cps_calc_millis[i] = millis();
             }
         }
 
@@ -569,6 +606,8 @@ void loop() {
             }
         }
     }
+
+    noInterrupts();
 
     // wait for 'activate' command (0xFF, 0x7F)
     if (spi.read() != 0xFF)
@@ -603,6 +642,8 @@ void loop() {
     } else if (cmd == 8) {
         reset_self();
     }
+
+    interrupts();
 }
 
 // Force init to be called *first*, i.e. before static object allocation.
